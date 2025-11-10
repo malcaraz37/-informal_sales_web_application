@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VentaLite - Resumen del día</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← Volver</a>
+        
+        <div class="summary-header">
+            <h2>📊 Resumen del día</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div id="salesList" class="sales-list">
+            <!-- Las ventas se cargarán aquí -->
+        </div>
+
+        <div class="total-card">
+            <div class="total-label">Total estimado</div>
+            <div class="total-amount" id="totalAmount">$0.00</div>
+        </div>
+
+        <button class="btn-reset" onclick="openResetModal()">
+            🔄 Reiniciar día
+        </button>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="icon">📊</div>
+            <p>No hay ventas registradas</p>
+            <a href="agregar.html">
+                <button class="btn-primary">Agregar productos</button>
+            </a>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de reinicio -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <h3>¿Reiniciar el día?</h3>
+            <p>Se borrarán todos los productos, ventas y datos del día. Esta acción no se puede deshacer.</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeResetModal()">Cancelar</button>
+                <button class="btn-confirm-modal" onclick="confirmReset()">Reiniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación de éxito -->
+    <div id="successNotification" class="success-notification">
+        <span class="check-icon">✓</span>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function renderSummary() {
+            const products = getProducts();
+            const salesList = document.getElementById('salesList');
+            const emptyState = document.getElementById('emptyState');
+            const totalAmount = document.getElementById('totalAmount');
+            
+            // Filtrar solo productos que tienen ventas
+            const soldProducts = products.filter(p => p.soldToday > 0);
+            
+            if (soldProducts.length === 0) {
+                salesList.style.display = 'none';
+                emptyState.style.display = 'block';
+                totalAmount.textContent = '$0.00';
+                return;
+            }
+            
+            salesList.style.display = 'flex';
+            emptyState.style.display = 'none';
+            
+            // Calcular total
+            let total = 0;
+            
+            salesList.innerHTML = soldProducts.map(product => {
+                const productTotal = product.soldToday * product.price;
+                total += productTotal;
+                
+                return `
+                    <div class="sale-card">
+                        <div>
+                            <div class="sale-label">${product.name}</div>
+                            <div class="sale-value">${product.soldToday} vendidos</div>
+                        </div>
+                        <div class="sale-value">$${productTotal.toFixed(2)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            totalAmount.textContent = `$${total.toFixed(2)}`;
+        }
+
+        function openResetModal() {
+            document.getElementById('resetModal').classList.add('active');
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.remove('active');
+        }
+
+        function confirmReset() {
+            resetDay();
+            closeResetModal();
+            showSuccessNotification();
+            
+            // Redirigir al inicio después de un breve delay
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+
+        // Cargar resumen al inicio
+        renderSummary();
+    </script>
+</body>
+</html>
