@@ -1,194 +1,232 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VentaLite - Inventario</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VentaLite - Inventario</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <a href="index.html" class="back-btn">← Volver</a>
-        
-        <div class="header">
-            <span class="icon">🗃️</span>
-            <h2>Inventario y ventas</h2>
-        </div>
+  <div class="container">
+    <a href="index.html" class="back-btn">← Volver</a>
 
-        <div id="productList" class="product-list">
-            <!-- Los productos se cargarán aquí -->
-        </div>
-
-        <div id="emptyState" class="empty-state" style="display: none;">
-            <div class="icon">📦</div>
-            <p>No hay productos agregados</p>
-            <a href="agregar.html">
-                <button class="btn-primary">Agregar primer producto</button>
-            </a>
-        </div>
-
-        <!-- Botones de acción al final -->
-        <div id="actionButtons" class="action-buttons" style="display: none;">
-            <button class="btn-confirm-all" onclick="confirmAllSales()">
-                ✓ Confirmar venta(s)
-            </button>
-            <a href="resumen.html" class="btn-summary">
-                📊 Ir a resumen del día
-            </a>
-        </div>
+    <div class="header">
+      <span class="icon">🗃️</span>
+      <h2>Inventario y ventas</h2>
     </div>
 
-    <!-- Modal de confirmación de venta -->
-    <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <h3>¿Deseas confirmar esta venta?</h3>
-            <p id="modalMessage"></p>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-                <button class="btn-confirm-modal" onclick="confirmSale()">Confirmar ✓</button>
-            </div>
-        </div>
+    <div id="productList" class="product-list"></div>
+
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <div class="icon">📦</div>
+      <p>No hay productos agregados</p>
+      <a href="agregar.html">
+        <button class="btn-primary">Agregar primer producto</button>
+      </a>
     </div>
 
-    <!-- Modal de confirmación de eliminación -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <h3>¿Eliminar producto?</h3>
-            <p id="deleteModalMessage"></p>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeDeleteModal()">Cancelar</button>
-                <button class="btn-confirm-modal" onclick="confirmDelete()">Eliminar</button>
-            </div>
-        </div>
+    <div id="actionButtons" class="action-buttons" style="display:none;">
+      <button class="btn-confirm-all" onclick="openConfirmAllModal()">
+        ✓ Confirmar venta(s)
+      </button>
+      <a href="resumen.html" class="btn-summary">📊 Ir a resumen del día</a>
     </div>
+  </div>
 
-    <!-- Notificación de éxito -->
-    <div id="successNotification" class="success-notification">
-        <span class="check-icon">✓</span>
+  <!-- Modal de confirmación -->
+  <div id="confirmAllModal" class="modal">
+    <div class="modal-content">
+      <h3>¿Deseas confirmar estas ventas?</h3>
+      <div id="confirmAllSummary" style="text-align:left; margin:15px 0; color:#444; font-size:15px; line-height:1.5;">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeConfirmAllModal()">Cancelar</button>
+        <button class="btn-confirm-modal" onclick="confirmAllSalesFinal()">Confirmar ✓</button>
+      </div>
     </div>
+  </div>
 
-<script src="app.js"></script>
-<script>
+  <!-- Modal eliminar producto -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3>¿Eliminar producto?</h3>
+      <p id="deleteModalMessage"></p>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeDeleteModal()">Cancelar</button>
+        <button class="btn-confirm-modal" onclick="confirmDelete()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificación centrada -->
+  <div id="centerSuccess" class="center-success">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-icon">
+      <path fill="none" stroke="white" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span>Ventas confirmadas correctamente.</span>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
     let pendingDeleteIndex = null;
 
     function renderInventory() {
-        const products = getProducts();
-        const productList = document.getElementById('productList');
-        const emptyState = document.getElementById('emptyState');
-        const actionButtons = document.getElementById('actionButtons');
+      const products = getProducts();
+      const productList = document.getElementById('productList');
+      const emptyState = document.getElementById('emptyState');
+      const actionButtons = document.getElementById('actionButtons');
 
-        if (products.length === 0) {
-            productList.style.display = 'none';
-            emptyState.style.display = 'block';
-            actionButtons.style.display = 'none';
-            return;
-        }
+      if (products.length === 0) {
+        productList.style.display = 'none';
+        emptyState.style.display = 'block';
+        actionButtons.style.display = 'none';
+        return;
+      }
 
-        productList.style.display = 'flex';
-        emptyState.style.display = 'none';
-        actionButtons.style.display = 'block';
+      productList.style.display = 'flex';
+      emptyState.style.display = 'none';
+      actionButtons.style.display = 'block';
 
-        productList.innerHTML = products.map((product, index) => {
-            const lowStock = product.currentQuantity <= 3 && product.currentQuantity > 0;
+      productList.innerHTML = products.map((p, i) => {
+        const lowStock = p.currentQuantity <= 3 && p.currentQuantity > 0;
+        return `
+          <div class="product-item">
+            <div class="product-header-row">
+              <div class="product-name">${p.name}</div>
+              <button class="btn-delete" onclick="openDeleteModal(${i})">🗑️</button>
+            </div>
+            ${lowStock ? '<div class="stock-alert">⚠️ Quedan pocas piezas</div>' : ''}
+            <div class="product-info-row">Disponibles: <strong id="stock-${i}">${p.currentQuantity}</strong></div>
+            <div class="product-sale-row">
+              <div>Vendidos hoy: <strong id="sold-${i}">${p.soldToday || 0}</strong></div>
+              <div class="quantity-control">
+                <button class="btn-quantity btn-minus" onclick="adjustQuantity(${i}, -1)">−</button>
+                <input type="number" class="quantity-input" id="qty-${i}" value="0" min="0" max="${p.currentQuantity}" />
+                <button class="btn-quantity btn-plus" onclick="adjustQuantity(${i}, 1)">+</button>
+              </div>
+            </div>
+            <div class="product-info-row">Precio: <strong>$${p.price.toFixed(2)}</strong></div>
+          </div>`;
+      }).join('');
 
-            return `
-                <div class="product-item">
-                    <div class="product-header-row">
-                        <div class="product-name">${product.name}</div>
-                        <button class="btn-delete" onclick="openDeleteModal(${index})" title="Eliminar producto">
-                            🗑️
-                        </button>
-                    </div>
-                    
-                    ${lowStock ? '<div class="stock-alert">⚠️ Quedan pocas piezas</div>' : ''}
-                    
-                    <div class="product-info-row">
-                        <div>Disponibles: <strong id="stock-${index}">${product.currentQuantity}</strong></div>
-                    </div>
-                    
-                    <div class="product-sale-row">
-                        <div>Vendidos hoy: <strong id="sold-${index}">${product.soldToday || 0}</strong></div>
-                        <div class="quantity-control">
-                            <button class="btn-quantity btn-minus" onclick="adjustQuantity(${index}, -1)">−</button>
-                            <input type="number" class="quantity-input" id="qty-${index}" value="0" min="0" max="${product.currentQuantity}" />
-                            <button class="btn-quantity btn-plus" onclick="adjustQuantity(${index}, 1)">+</button>
-                        </div>
-                    </div>
-                    
-                    <div class="product-info-row">
-                        <div>Precio: <strong>${product.price.toFixed(2)}</strong></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+      // 🔄 Agregar listeners de cambio manual
+      attachManualChangeListeners();
     }
 
-    function adjustQuantity(index, change) {
-        const products = getProducts();
-        const product = products[index];
-        const qtyInput = document.getElementById(`qty-${index}`);
-        const stockDisplay = document.getElementById(`stock-${index}`);
-        const soldDisplay = document.getElementById(`sold-${index}`);
+    function adjustQuantity(i, change) {
+      const products = getProducts();
+      const p = products[i];
+      const qtyInput = document.getElementById(`qty-${i}`);
+      const stockDisplay = document.getElementById(`stock-${i}`);
 
-        let qty = parseInt(qtyInput.value) || 0;
-        let currentStock = product.currentQuantity;
-        let soldToday = product.soldToday || 0;
+      let qty = parseInt(qtyInput.value) || 0;
 
-        if (change === 1 && currentStock > 0) {
-            qty++;
-            product.currentQuantity--;
-            product.soldToday++;
-        } else if (change === -1 && qty > 0) {
-            qty--;
-            product.currentQuantity++;
-            product.soldToday--;
-        }
+      // Cambiar con los botones
+      if (change === 1 && qty < p.currentQuantity) qty++;
+      else if (change === -1 && qty > 0) qty--;
 
-        qtyInput.value = qty;
-        stockDisplay.textContent = product.currentQuantity;
-        soldDisplay.textContent = product.soldToday;
-
-        saveProducts(products);
+      qtyInput.value = qty;
+      stockDisplay.textContent = p.currentQuantity - qty;
     }
 
-    function confirmAllSales() {
-        const products = getProducts();
-        const totalSold = products.reduce((sum, p) => sum + (p.soldToday || 0), 0);
-        if (totalSold === 0) {
-            alert("No se ha realizado ninguna venta.");
-            return;
-        }
-        showSuccessNotification();
-        alert("Ventas confirmadas correctamente ✅");
-        renderInventory();
+    // 🔄 Actualiza “Disponibles” al escribir manualmente
+    function attachManualChangeListeners() {
+      const products = getProducts();
+      products.forEach((p, i) => {
+        const qtyInput = document.getElementById(`qty-${i}`);
+        const stockDisplay = document.getElementById(`stock-${i}`);
+
+        qtyInput.addEventListener("input", () => {
+          let qty = parseInt(qtyInput.value) || 0;
+          if (qty < 0) qty = 0;
+          if (qty > p.currentQuantity) qty = p.currentQuantity;
+          qtyInput.value = qty;
+          stockDisplay.textContent = p.currentQuantity - qty;
+        });
+      });
     }
 
-    function openDeleteModal(index) {
-        const products = getProducts();
-        const product = products[index];
-        pendingDeleteIndex = index;
+    function openConfirmAllModal() {
+      const products = getProducts();
+      let totalQty = 0;
+      let totalMoney = 0;
+      let summaryLines = [];
 
-        document.getElementById('deleteModalMessage').textContent =
-            `¿Estás seguro de eliminar "${product.name}"? Esta acción no se puede deshacer.`;
+      products.forEach((p, i) => {
+        const qtyInput = document.getElementById(`qty-${i}`);
+        const qty = parseInt(qtyInput.value) || 0;
 
-        document.getElementById('deleteModal').classList.add('active');
+        if (qty > 0) {
+          const subtotal = qty * p.price;
+          totalQty += qty;
+          totalMoney += subtotal;
+          summaryLines.push(`${p.name}: ${qty}`);
+        }
+      });
+
+      if (summaryLines.length === 0) {
+        alert("No has seleccionado ninguna cantidad para vender.");
+        return;
+      }
+
+      let summaryHTML = summaryLines.join('<br>') +
+        `<br><hr> Total de productos vendidos: <strong>${totalQty}</strong><br>
+        Total de dinero: <strong>$${totalMoney.toFixed(2)}</strong>`;
+
+      document.getElementById("confirmAllSummary").innerHTML = summaryHTML;
+      document.getElementById("confirmAllModal").classList.add("active");
+    }
+
+    function closeConfirmAllModal() {
+      document.getElementById("confirmAllModal").classList.remove("active");
+    }
+
+    function confirmAllSalesFinal() {
+      const products = getProducts();
+
+      products.forEach((p, i) => {
+        const qtyInput = document.getElementById(`qty-${i}`);
+        const qty = parseInt(qtyInput.value) || 0;
+
+        if (qty > 0 && qty <= p.currentQuantity) {
+          p.currentQuantity -= qty;
+          p.soldToday = (p.soldToday || 0) + qty;
+          qtyInput.value = 0;
+        }
+      });
+
+      saveProducts(products);
+      closeConfirmAllModal();
+      renderInventory();
+
+      const centerMsg = document.getElementById('centerSuccess');
+      centerMsg.classList.add('show');
+      setTimeout(() => centerMsg.classList.remove('show'), 2000);
+    }
+
+    function openDeleteModal(i) {
+      const p = getProducts()[i];
+      pendingDeleteIndex = i;
+      document.getElementById('deleteModalMessage').textContent =
+        `¿Estás seguro de eliminar "${p.name}"? Esta acción no se puede deshacer.`;
+      document.getElementById('deleteModal').classList.add('active');
     }
 
     function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('active');
-        pendingDeleteIndex = null;
+      document.getElementById('deleteModal').classList.remove('active');
+      pendingDeleteIndex = null;
     }
 
     function confirmDelete() {
-        if (pendingDeleteIndex !== null) {
-            deleteProduct(pendingDeleteIndex);
-            closeDeleteModal();
-            showSuccessNotification();
-            renderInventory();
-        }
+      if (pendingDeleteIndex !== null) {
+        deleteProduct(pendingDeleteIndex);
+        closeDeleteModal();
+        renderInventory();
+      }
     }
 
-    renderInventory();
-</script>
+    document.addEventListener("DOMContentLoaded", renderInventory);
+  </script>
 </body>
 </html>
